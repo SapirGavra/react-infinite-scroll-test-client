@@ -29,10 +29,10 @@ const BasicTable: FC = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: keyof Airplane; direction: 'asc' | 'desc' } | null>(null);
+    const [sortLabel, setSortLabel] = useState(false); // Sort label state
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedKey, setSelectedKey] = useState<keyof Airplane | null>(null);
     const [filterValues, setFilterValues] = useState<{ [key in keyof Airplane]?: Set<string | number> }>({});
-    const [sortLabel, setSortLabel] = useState(true);
 
     useEffect(() => {
         setAllRows(airplanesData as Airplane[]);
@@ -56,7 +56,7 @@ const BasicTable: FC = () => {
     };
 
     const handleSort = (key: keyof Airplane) => {
-        createSortHandler(key, sortConfig, setSortConfig, allRows, setAllRows, currentIndex, setRows, sortLabel)();
+        createSortHandler(key, sortConfig, setSortConfig, allRows, setAllRows, currentIndex, setRows, sortLabel, setSortLabel)();
     };
 
     const handleMenuOpen = (event: MouseEvent<HTMLButtonElement>, key: keyof Airplane) => {
@@ -69,7 +69,7 @@ const BasicTable: FC = () => {
         setSelectedKey(null);
     };
 
-    const filteredRows = (sortLabel ? allRows : rows).filter((row) => {
+    const filteredRows = allRows.filter((row) => {
         return Object.entries(filterValues).every(([key, values]) => {
             return values.size === 0 || values.has(row[key as keyof Airplane]);
         });
@@ -79,7 +79,7 @@ const BasicTable: FC = () => {
         <TableContainer
             component={Paper}
             onScroll={handleScroll}>
-            <Table sx={{ backgroundColor: '#222220' }} aria-label="simple table">
+            <Table sx={{ backgroundColor: '#222220'}} aria-label="simple table">
                 <TableHead sx={{ backgroundColor: 'black', textAlign: 'center', position: 'sticky', top: 0, zIndex: 1 }}>
                     <TableRow>
                         {columns.map((column) => (
@@ -107,6 +107,7 @@ const BasicTable: FC = () => {
                             <TruncatedCell text={row.type} maxLength={10} />
                             <TableCell sx={{ color: 'white' }} align="center">{row.capacity}</TableCell>
                             <TableCell sx={{ color: 'white' }} align="center">{row.size}</TableCell>
+
                         </TableRow>
                     ))}
                     <TableRow>
@@ -124,7 +125,7 @@ const BasicTable: FC = () => {
                 {selectedKey && Array.from(new Set((airplanesData as Airplane[]).map(item => item[selectedKey])))
                     .sort()
                     .map(value => (
-                        <MenuItem key={value}>
+                        <MenuItem  key={value}>
                             <Checkbox
                                 checked={filterValues[selectedKey]?.has(value) || false}
                                 onChange={() => handleFilterChange(selectedKey, value, filterValues, setFilterValues)}
@@ -133,6 +134,7 @@ const BasicTable: FC = () => {
                         </MenuItem>
                     ))}
             </Menu>
+
         </TableContainer>
     );
 };
