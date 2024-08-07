@@ -13,7 +13,8 @@ export const createSortHandler = (
     allRows: Airplane[],
     setAllRows: (rows: Airplane[]) => void,
     currentIndex: number,
-    setRows: (rows: Airplane[]) => void
+    setRows: (rows: Airplane[]) => void,
+    sortLabel: boolean
 ) => () => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -32,5 +33,7 @@ export const createSortHandler = (
     });
 
     setAllRows(sortedRows);
-    setRows(sortedRows.slice(0, currentIndex));
+    if (sortLabel) {
+        setRows(sortedRows.slice(0, currentIndex));
+    }
 };

@@ -1,4 +1,5 @@
 import { Airplane } from "../types/Airplane";
+import React, { Dispatch } from 'react';
 
 type FilterValues = { [key in keyof Airplane]?: Set<string | number> };
 
@@ -6,7 +7,7 @@ export const handleFilterChange = (
     key: keyof Airplane,
     value: string | number,
     filterValues: FilterValues,
-    setFilterValues: React.Dispatch<React.SetStateAction<FilterValues>>
+    setFilterValues: Dispatch<React.SetStateAction<FilterValues>>
 ) => {
     setFilterValues((prevFilters) => {
         const newFilters = { ...prevFilters };
