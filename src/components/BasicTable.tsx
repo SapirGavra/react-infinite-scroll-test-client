@@ -17,7 +17,7 @@ import airplanesData from '../assets/airplanes.json';
 import './BasicTable.css';
 import { Airplane } from "../types/Airplane";
 import { columns } from "../types/Column";
-import { createSortHandler, sortRows } from './handleSort';
+import { createSortHandler, sortRows , SortConfig} from './handleSort';
 import { handleFilterChange } from './handleFilterChange';
 import TruncatedCell from './TruncatedCell';
 
@@ -28,7 +28,7 @@ const BasicTable: FC = () => {
     const [rows, setRows] = useState<Airplane[]>((airplanesData).slice(0, rowsLoadFirst));
     const [currentIndex, setCurrentIndex] = useState(rowsLoadFirst);
     const loadingRef = useRef<boolean>(false);
-    const [sortConfig, setSortConfig] = useState<{ key: keyof Airplane; direction: 'asc' | 'desc' } | null>(null);
+    const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
     const sortLabelRef = useRef<boolean>(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedKey, setSelectedKey] = useState<keyof Airplane | null>(null);
@@ -70,7 +70,10 @@ const BasicTable: FC = () => {
     };
 
     const handleSort = (key: keyof Airplane) => {
-        createSortHandler(key, sortConfig, setSortConfig, rows, setRows, currentIndex, sortLabelRef)();
+        const direction2 = sortConfig?.key === key ? sortConfig.direction : 'asc';
+        const direction: 'asc' | 'desc' = sortConfig && sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
+        setSortConfig({ key, direction });
+        createSortHandler(sortConfig, rows, setRows, currentIndex, sortLabelRef)();
     };
 
     const handleMenuOpen = (event: MouseEvent<HTMLButtonElement>, key: keyof Airplane) => {

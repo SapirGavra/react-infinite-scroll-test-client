@@ -1,6 +1,6 @@
 import { Airplane } from "../types/Airplane";
 
-interface SortConfig {
+export interface SortConfig {
     key: keyof Airplane;
     direction: 'asc' | 'desc';
 }
@@ -26,8 +26,7 @@ export const createSortHandler = (
     currentIndex: number,
     sortLabelRef: React.MutableRefObject<boolean>
 ) => () => {
-    const direction: 'asc' | 'desc' = sortConfig && sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
-    setSortConfig({ key, direction });
+
 
     if (!sortLabelRef.current) {
         console.log('sortLabel1:', sortLabelRef.current)
