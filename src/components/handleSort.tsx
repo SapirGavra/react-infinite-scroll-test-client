@@ -5,36 +5,38 @@ interface SortConfig {
     direction: 'asc' | 'desc';
 }
 
+export const sortRows = (rows: Airplane[], key: keyof Airplane, direction: 'asc' | 'desc') => {
+    return [...rows].sort((a, b) => {
+        if (a[key] < b[key]) {
+            return direction === 'asc' ? -1 : 1;
+        }
+        if (a[key] > b[key]) {
+            return direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+};
+
 export const createSortHandler = (
     key: keyof Airplane,
     sortConfig: SortConfig | null,
     setSortConfig: (config: SortConfig) => void,
-    allRows: Airplane[],
-    setAllRows: (rows: Airplane[]) => void,
-    currentIndex: number,
+    rows: Airplane[],
     setRows: (rows: Airplane[]) => void,
-    sortLabel: boolean,
-    setSortLabel: (value: boolean) => void
+    currentIndex: number,
+    sortLabelRef: React.MutableRefObject<boolean>
 ) => () => {
-    let direction: 'asc' | 'desc' = 'asc';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-        direction = 'desc';
-    }
+    const direction: 'asc' | 'desc' = sortConfig && sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
     setSortConfig({ key, direction });
 
-    if (!sortLabel) {
-        setSortLabel(true);
-        const sortedRows = [...allRows].sort((a, b) => {
-            if (a[key] > b[key]) {
-                return direction === 'asc' ? -1 : 1;
-            }
-            if (a[key] < b[key]) {
-                return direction === 'asc' ? 1 : -1;
-            }
-            return 0;
-        });
-        setAllRows(sortedRows);
+    if (!sortLabelRef.current) {
+        console.log('sortLabel1:', sortLabelRef.current)
+        sortLabelRef.current = true;
+        console.log('sortLabel2:', sortLabelRef.current)
+
+        const sortedRows = sortRows(rows, key, direction);
         setRows(sortedRows.slice(0, currentIndex));
-        setSortLabel(false);
+        sortLabelRef.current = false;
+        console.log('sortLabel3:', sortLabelRef.current)
     }
 };

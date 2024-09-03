@@ -1,4 +1,4 @@
-import React, { useState, useEffect, UIEvent, MouseEvent, FC } from 'react';
+import React, { useState, useEffect, useRef, UIEvent, MouseEvent, FC } from 'react';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -17,46 +17,60 @@ import airplanesData from '../assets/airplanes.json';
 import './BasicTable.css';
 import { Airplane } from "../types/Airplane";
 import { columns } from "../types/Column";
-import { createSortHandler } from './handleSort';
+import { createSortHandler, sortRows } from './handleSort';
 import { handleFilterChange } from './handleFilterChange';
 import TruncatedCell from './TruncatedCell';
 
 const BasicTable: FC = () => {
-    const rowsLoadFirst = 6;
-    const numberRowsToLoad = 4;
-    const [allRows, setAllRows] = useState<Airplane[]>([]);
-    const [rows, setRows] = useState<Airplane[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [loading, setLoading] = useState(false);
+    const rowsLoadFirst = 5;
+    const numberRowsToLoad = 2;
+    const allRows = airplanesData;
+    const [rows, setRows] = useState<Airplane[]>((airplanesData).slice(0, rowsLoadFirst));
+    const [currentIndex, setCurrentIndex] = useState(rowsLoadFirst);
+    const loadingRef = useRef<boolean>(false);
     const [sortConfig, setSortConfig] = useState<{ key: keyof Airplane; direction: 'asc' | 'desc' } | null>(null);
-    const [sortLabel, setSortLabel] = useState(false); // Sort label state
+    const sortLabelRef = useRef<boolean>(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedKey, setSelectedKey] = useState<keyof Airplane | null>(null);
     const [filterValues, setFilterValues] = useState<{ [key in keyof Airplane]?: Set<string | number> }>({});
+    const [isFilterMode, setIsFilterMode] = useState(false);
 
     useEffect(() => {
-        setAllRows(airplanesData as Airplane[]);
-        setRows((airplanesData as Airplane[]).slice(0, rowsLoadFirst));
-        setCurrentIndex(rowsLoadFirst);
-    }, []);
+        console.log('row:', rows);
+    }, [rows]);
+
 
     const handleScroll = (event: UIEvent<HTMLDivElement>) => {
-        const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
-        if (scrollHeight - scrollTop <= clientHeight + 50 && !loading && currentIndex < (airplanesData as Airplane[]).length) {
-            setLoading(true);
+        // const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+        // if (!loadingRef.current && (scrollHeight - scrollTop <= clientHeight) && currentIndex < airplanesData.length) {
+        if (!loadingRef.current && currentIndex < airplanesData.length) {
+
+            console.log('loading1:', loadingRef)
+            loadingRef.current = true;
+            console.log('loading1:', loadingRef)
+            console.log('sortConfig1:',sortConfig)
+
             setTimeout(() => {
-                setRows((prevRows) => [
-                    ...prevRows,
-                    ...(airplanesData as Airplane[]).slice(currentIndex, currentIndex + numberRowsToLoad)
-                ]);
+                const newRows = airplanesData.slice(currentIndex, currentIndex + numberRowsToLoad);
+                setRows((prevRows) => {
+                    const updatedRows = [...prevRows, ...newRows];
+                    console.log('sortConfig2:',sortConfig)
+                    console.log('sortLabelRef',sortLabelRef)
+                    if (sortConfig && !sortLabelRef) {
+                        return sortRows(updatedRows, sortConfig?.key, sortConfig?.direction);
+                    }
+                    return updatedRows;
+                });
                 setCurrentIndex((prevIndex) => prevIndex + numberRowsToLoad);
-                setLoading(false);
+                loadingRef.current = false;
+                console.log('loading1:', loadingRef)
+
             }, 500); // Simulate a loading delay
         }
     };
 
     const handleSort = (key: keyof Airplane) => {
-        createSortHandler(key, sortConfig, setSortConfig, allRows, setAllRows, currentIndex, setRows, sortLabel, setSortLabel)();
+        createSortHandler(key, sortConfig, setSortConfig, rows, setRows, currentIndex, sortLabelRef)();
     };
 
     const handleMenuOpen = (event: MouseEvent<HTMLButtonElement>, key: keyof Airplane) => {
@@ -69,17 +83,26 @@ const BasicTable: FC = () => {
         setSelectedKey(null);
     };
 
-    const filteredRows = allRows.filter((row) => {
-        return Object.entries(filterValues).every(([key, values]) => {
-            return values.size === 0 || values.has(row[key as keyof Airplane]);
+    const getRows = () => {
+        // If no filters are applied,
+        if (!isFilterMode || Object.keys(filterValues).length === 0) {
+            return sortConfig ? sortRows(rows, sortConfig.key, sortConfig.direction) : rows;
+        }
+
+        // Apply filtering based on isFilterMode
+        const filteredRows = allRows.filter((row) => {
+            return Object.entries(filterValues).every(([key, values]) => {
+                return values.size === 0 || values.has(row[key as keyof Airplane]);
+            });
         });
-    });
+
+        // Apply sorting after filtering
+        return sortConfig ? sortRows(filteredRows, sortConfig.key, sortConfig.direction) : filteredRows;
+    };
 
     return (
-        <TableContainer
-            component={Paper}
-            onScroll={handleScroll}>
-            <Table sx={{ backgroundColor: '#222220'}} aria-label="simple table">
+        <TableContainer component={Paper} onScroll={handleScroll}>
+            <Table sx={{ backgroundColor: '#222220' }} aria-label="simple table">
                 <TableHead sx={{ backgroundColor: 'black', textAlign: 'center', position: 'sticky', top: 0, zIndex: 1 }}>
                     <TableRow>
                         {columns.map((column) => (
@@ -99,7 +122,7 @@ const BasicTable: FC = () => {
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {filteredRows.slice(0, currentIndex).map((row) => (
+                    {getRows().map((row) => (
                         <TableRow key={row.id}>
                             <TableCell sx={{ color: 'white' }} align="center">
                                 {row.id}
@@ -107,34 +130,29 @@ const BasicTable: FC = () => {
                             <TruncatedCell text={row.type} maxLength={10} />
                             <TableCell sx={{ color: 'white' }} align="center">{row.capacity}</TableCell>
                             <TableCell sx={{ color: 'white' }} align="center">{row.size}</TableCell>
-
                         </TableRow>
                     ))}
                     <TableRow>
                         <TableCell colSpan={4} align="center">
-                            {loading && <CircularProgress />}
+                            {/*TODO: remove `currentIndex < airplanesData.length`*/}
+                            {loadingRef && currentIndex < airplanesData.length && !isFilterMode && <CircularProgress />}
                         </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-            >
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
                 {selectedKey && Array.from(new Set((airplanesData as Airplane[]).map(item => item[selectedKey])))
                     .sort()
                     .map(value => (
-                        <MenuItem  key={value}>
+                        <MenuItem key={value}>
                             <Checkbox
                                 checked={filterValues[selectedKey]?.has(value) || false}
-                                onChange={() => handleFilterChange(selectedKey, value, filterValues, setFilterValues)}
+                                onChange={() => handleFilterChange(selectedKey, value, filterValues, setFilterValues, setIsFilterMode)}
                             />
                             {value}
                         </MenuItem>
                     ))}
             </Menu>
-
         </TableContainer>
     );
 };
